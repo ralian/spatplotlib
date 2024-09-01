@@ -13,12 +13,9 @@ from . import maptiles, htmlbase, htmlipynb
 
 # TODO need newer versions of these
 # We download explicitly the CSS and the JS.
-_leaflet_js = JavascriptLink('https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.3/leaflet.js')
-_leaflet_css = CssLink('https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.3/leaflet.css')
-_attribution = '<a href="https://github.com/jwass/mplleaflet">mplleaflet</a>'
-
-#env = Environment(loader=PackageLoader('mplleaflet', 'templates'),
-#                  trim_blocks=True, lstrip_blocks=True)
+_leaflet_js = JavascriptLink('https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js')
+_leaflet_css = CssLink('https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css')
+_attribution = '<a href="https://github.com/ralian/spatplotlib">spatplotlib</a>'
 
 def fig_to_html(fig=None, generator=htmlbase.format, tiles=None, crs=None,
                 epsg=None, embed_links=False, float_precision=6):
