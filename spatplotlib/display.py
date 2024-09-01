@@ -130,16 +130,16 @@ def display(fig=None, closefig=True, **kwargs):
     closefig : boolean, default True
         Close the current Figure
     """
-    from IPython.display import HTML
     if fig is None:
         fig = plt.gcf()
     if closefig:
         plt.close(fig)
 
-    html = base64.b64encode(fig_to_html(fig, **kwargs).encode('utf8')).decode('utf8'),
-    width = '100%',
+    html = base64.b64encode(fig_to_html(fig, **kwargs).encode('utf8')).decode('utf8')
+    width = '100%'
     height = int(60. * fig.get_figheight())
     iframe_html = f"""<iframe src="data:text/html;base64,{html}" width="{width}" height="{height}"></iframe>'"""
+    from IPython.display import HTML
     return HTML(iframe_html)
 
 def show(fig=None, path='_map.html', **kwargs):

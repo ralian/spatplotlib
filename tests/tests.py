@@ -1,5 +1,5 @@
 import matplotlib.pyplot as plt
-import src as spatplotlib
+import spatplotlib
 import os
 
 def test_basic():
@@ -15,3 +15,10 @@ def test_scatter():
     spatplotlib.show()
 
 test_basic_tiles()
+
+ipynbtest = """
+import matplotlib.pyplot as plt
+plt.scatter([0, 10, 0, 10], [0, 0, 10, 10], c=[1, 2, 3, 4])
+import spatplotlib.spatplotlib as spatplotlib
+spatplotlib.display()
+"""
