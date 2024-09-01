@@ -9,8 +9,7 @@ from .exporter import Exporter
 from .leaflet_renderer import LeafletRenderer
 from .links import JavascriptLink, CssLink
 from .utils import FloatEncoder
-from . import maptiles
-from . import htmlbase
+from . import maptiles, htmlbase, htmlipynb
 
 # TODO need newer versions of these
 # We download explicitly the CSS and the JS.
@@ -21,7 +20,7 @@ _attribution = '<a href="https://github.com/jwass/mplleaflet">mplleaflet</a>'
 #env = Environment(loader=PackageLoader('mplleaflet', 'templates'),
 #                  trim_blocks=True, lstrip_blocks=True)
 
-def fig_to_html(fig=None, template='htmlbase.py', tiles=None, crs=None,
+def fig_to_html(fig=None, generator=htmlbase.format, tiles=None, crs=None,
                 epsg=None, embed_links=False, float_precision=6):
     """
     Convert a Matplotlib Figure to a Leaflet map
@@ -65,15 +64,8 @@ def fig_to_html(fig=None, template='htmlbase.py', tiles=None, crs=None,
     String of html of the resulting webpage
 
     """
-    if tiles is None:
-        tiles = maptiles.osm
-    #elif isinstance(tiles, six.string_types):
-    #    if tiles not in maptiles.tiles:
-    #        raise ValueError('Unknown tile source "{}"'.format(tiles))
-    #    else:
-    #        tiles = maptiles.tiles[tiles]
 
-    #template = env.get_template(template)
+    tiles = maptiles.tiles[tiles] if tiles is not None else maptiles.osm
 
     if fig is None:
         fig = plt.gcf()
@@ -83,26 +75,18 @@ def fig_to_html(fig=None, template='htmlbase.py', tiles=None, crs=None,
     exporter = Exporter(renderer)
     exporter.run(fig)
 
-    attribution = _attribution + ' | ' + tiles[1]
-
-    mapid = str(uuid.uuid4()).replace('-', '')
-
     FloatEncoder._formatter = ".{}f".format(float_precision)
-    gjdata = json.dumps(renderer.geojson(), cls=FloatEncoder)
     params = {
-        'geojson': gjdata,
+        'geojson': json.dumps(renderer.geojson(), cls=FloatEncoder),
         'width': fig.get_figwidth()*dpi,
         'height': fig.get_figheight()*dpi,
-        'mapid': mapid,
+        'mapid': str(uuid.uuid4()).replace('-', ''),
         'tile_url': tiles[0],
-        'attribution': attribution,
+        'attribution': _attribution + ' | ' + tiles[1],
         'links': [_leaflet_js,_leaflet_css],
         'embed_links': embed_links,
     }
-    html = htmlbase.format(**params)
-    #html = template.render(params)
-
-    return html
+    return generator.__call__(**params)
 
 
 def fig_to_geojson(fig=None, **kwargs):
@@ -152,14 +136,10 @@ def display(fig=None, closefig=True, **kwargs):
     if closefig:
         plt.close(fig)
 
-    html = fig_to_html(fig, **kwargs)
-
-    # We embed everything in an iframe.
-    iframe_html = '<iframe src="data:text/html;base64,{html}" width="{width}" height="{height}"></iframe>'\
-    .format(html = base64.b64encode(html.encode('utf8')).decode('utf8'),
-            width = '100%',
-            height= int(60.*fig.get_figheight()),
-           )
+    html = base64.b64encode(fig_to_html(fig, **kwargs).encode('utf8')).decode('utf8'),
+    width = '100%',
+    height = int(60. * fig.get_figheight())
+    iframe_html = f"""<iframe src="data:text/html;base64,{html}" width="{width}" height="{height}"></iframe>'"""
     return HTML(iframe_html)
 
 def show(fig=None, path='_map.html', **kwargs):
