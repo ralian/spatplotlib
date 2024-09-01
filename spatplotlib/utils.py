@@ -4,6 +4,7 @@ from json.encoder import JSONEncoder
 import warnings
 
 import matplotlib
+from matplotlib.axis import XAxis, YAxis
 from matplotlib import ticker
 from matplotlib.colors import colorConverter
 from matplotlib.path import Path
@@ -125,41 +126,34 @@ class StrMethodTickFormatterConvertor(object):
 
 def get_marker_style(line):
     """Get the style dictionary for matplotlib marker objects"""
-    style = {}
-    style['alpha'] = line.get_alpha()
-    if style['alpha'] is None:
-        style['alpha'] = 1
-
-    style['facecolor'] = export_color(line.get_markerfacecolor())
-    style['edgecolor'] = export_color(line.get_markeredgecolor())
-    style['edgewidth'] = line.get_markeredgewidth()
-
-    style['marker'] = line.get_marker()
     markerstyle = matplotlib.markers.MarkerStyle(line.get_marker())
     markersize = line.get_markersize()
     markertransform = (markerstyle.get_transform()
                        + matplotlib.transforms.Affine2D().scale(markersize, -markersize))
-    style['markerpath'] = SVG_path(markerstyle.get_path(),
-                                   markertransform)
-    style['markersize'] = markersize
-    style['zorder'] = line.get_zorder()
-    return style
+    return dict(
+        alpha=line.get_alpha() if line.get_alpha() else 1,
+        facecolor=export_color(line.get_markerfacecolor()),
+        edgecolor=export_color(line.get_markeredgecolor()),
+        edgewidth=line.get_markeredgewidth(),
+        marker=line.get_marker(),
+        markerpath=SVG_path(markerstyle.get_path(), markertransform),
+        markersize=markersize,
+        zorder=line.get_zorder()
+    )
 
 
 def get_text_style(text):
     """Return the text style dict for a text instance"""
-    style = {}
-    style['alpha'] = text.get_alpha()
-    if style['alpha'] is None:
-        style['alpha'] = 1
-    style['fontsize'] = text.get_size()
-    style['color'] = export_color(text.get_color())
-    style['halign'] = text.get_horizontalalignment()  # left, center, right
-    style['valign'] = text.get_verticalalignment()  # baseline, center, top
-    style['malign'] = text._multialignment # text alignment when '\n' in text
-    style['rotation'] = text.get_rotation()
-    style['zorder'] = text.get_zorder()
-    return style
+    return dict(
+        alpha=text.get_alpha() if text.get_alpha() else 1,
+        fontsize=text.get_size(),
+        color=export_color(text.get_color()),
+        halign=text.get_horizontalalignment(),
+        valign=text.get_verticalalignment(),
+        malign=text._multialignment,
+        rotation=text.get_rotation(),
+        zorder=text.get_zorder()
+    )
 
 
 def get_dasharray(obj):
@@ -202,33 +196,26 @@ def export_color(color):
 
 def get_path_style(path, fill=True):
     """Get the style dictionary for matplotlib path objects"""
-    style = dict()
-    style['alpha'] = path.get_alpha()
-    if style['alpha'] is None:
-        style['alpha'] = 1
-    style['edgecolor'] = export_color(path.get_edgecolor())
-    if fill:
-        style['facecolor'] = export_color(path.get_facecolor())
-    else:
-        style['facecolor'] = 'none'
-    style['edgewidth'] = path.get_linewidth()
-    style['dasharray'] = get_dasharray(path)
-    style['zorder'] = path.get_zorder()
-    return style
+    return dict(
+        alpha=path.get_alpha() if path.get_alpha() else 1,
+        edgecolor=export_color(path.get_edgecolor()),
+        facecolor=export_color(path.get_facecolor()) if fill else 'none',
+        edgewidth=path.get_linewidth(),
+        dasharray=get_dasharray(path),
+        zorder=path.get_zorder(),
+    )
 
 
 def get_line_style(line):
     """Get the style dictionary for matplotlib line objects"""
-    style = dict()
-    style['alpha'] = line.get_alpha()
-    if style['alpha'] is None:
-        style['alpha'] = 1
-    style['color'] = export_color(line.get_color())
-    style['linewidth'] = line.get_linewidth()
-    style['dasharray'] = get_dasharray(line)
-    style['zorder'] = line.get_zorder()
-    style['drawstyle'] = line.get_drawstyle()
-    return style
+    return dict(
+        alpha=line.get_alpha() if line.get_alpha() else 1,
+        color=export_color(line.get_color()),
+        linewidth=line.get_linewidth(),
+        dasharray=get_dasharray(line),
+        zorder=line.get_zorder(),
+        drawstyle=line.get_drawstyle()
+    )
 
 
 def iter_rings(data, pathcodes):
@@ -251,36 +238,35 @@ def iter_rings(data, pathcodes):
 
 
 def get_figure_properties(fig):
-    return {'figwidth': fig.get_figwidth(),
-            'figheight': fig.get_figheight(),
-            'dpi': fig.dpi}
+    return dict(
+        figwidth=fig.get_figwidth(),
+        figheight=fig.get_figheight(),
+        dpi=fig.dpi
+    )
 
 
 def get_grid_style(axis):
     gridlines = axis.get_gridlines()
     if axis._major_tick_kw['gridOn'] and len(gridlines) > 0:
-        color = export_color(gridlines[0].get_color())
-        alpha = gridlines[0].get_alpha()
-        dasharray = get_dasharray(gridlines[0])
         return dict(gridOn=True,
-                    color=color,
-                    dasharray=dasharray,
-                    alpha=alpha)
+                    color=export_color(gridlines[0].get_color()),
+                    dasharray=get_dasharray(gridlines[0]),
+                    alpha=gridlines[0].get_alpha())
     else:
         return {"gridOn": False}
 
 
 def get_axis_properties(axis):
     """Return the property dictionary for a matplotlib.Axis instance"""
-    props = {}
+    props = dict()
     label1On = axis._major_tick_kw.get('label1On', True)
 
-    if isinstance(axis, matplotlib.axis.XAxis):
+    if isinstance(axis, XAxis):
         if label1On:
             props['position'] = "bottom"
         else:
             props['position'] = "top"
-    elif isinstance(axis, matplotlib.axis.YAxis):
+    elif isinstance(axis, YAxis):
         if label1On:
             props['position'] = "left"
         else:
@@ -306,11 +292,11 @@ def get_axis_properties(axis):
         props['tickformat'] = convertor.output
         props['tickformat_formatter'] = "str_method"
     elif isinstance(formatter, ticker.PercentFormatter):
-        props['tickformat'] = {
-            "xmax": formatter.xmax,
-            "decimals": formatter.decimals,
-            "symbol": formatter.symbol,
-        }
+        props['tickformat'] = dict(
+            xmax=formatter.xmax,
+            decimals=formatter.decimals,
+            symbol=formatter.symbol,
+        )
         props['tickformat_formatter'] = "percent"
     elif hasattr(ticker, 'IndexFormatter') and isinstance(formatter, ticker.IndexFormatter):
         # IndexFormatter was dropped in matplotlib 3.5
